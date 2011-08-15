@@ -11159,7 +11159,7 @@ seriesProto.processData = function() {
 	
 	// TODO: find out why this runs twice for each series when changing range. This appeared after 
 	// the following commit: https://github.com/highslide-software/highcharts.com/commit/974435ac1dcc5fb25f90c13775a3ddd94f09ba74
-	 console.log(series.name)
+	// console.log(series.name)
 	
 	// clear previous groups
 	each (groupedData || [], function(point, i) {
@@ -12532,12 +12532,15 @@ function Scroller(chart) {
 			// respond to updated data in the base series
 			// todo: use similiar hook when base series is not yet initialized
 			addEvent(baseSeries, 'updatedData', function() {
+				
 				var baseExtremes = baseSeries.xAxis.getExtremes(),
 					range = baseExtremes.max - baseExtremes.min,
 					stickToMax = baseExtremes.max >=
 						navigatorSeries.xData[navigatorSeries.xData.length - 1],
 					stickToMin = baseExtremes.min - range <=
 						navigatorSeries.xData[0],
+					baseXAxis = baseSeries.xAxis,
+					hasSetExtremes = !!baseXAxis.setExtremes,
 					newMax,
 					newMin;
 
@@ -12549,10 +12552,14 @@ function Scroller(chart) {
 				// comes in
 				if (stickToMax) {
 					newMax = baseExtremes.dataMax;
-					baseSeries.xAxis.setExtremes(newMax - range, newMax);
+					if (hasSetExtremes) {
+						baseXAxis.setExtremes(newMax - range, newMax);
+					}
 				} else if (stickToMin) {
 					newMin = baseExtremes.dataMin;
-					baseSeries.xAxis.setExtremes(newMin, newMin + range);
+					if (hasSetExtremes) {
+						baseXAxis.setExtremes(newMin, newMin + range);
+					}
 				// if not, just move the scroller window to reflect the new series data
 				} else {
 					render(
@@ -12560,7 +12567,6 @@ function Scroller(chart) {
 						mathMin(baseExtremes.max, baseExtremes.dataMax)
 					);
 				}
-				
 			});
 
 			// an x axis is required for scrollbar also
