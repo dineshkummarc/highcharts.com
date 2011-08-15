@@ -6666,9 +6666,9 @@ function Chart (options, callback) {
 				// loop over all series and find the ones with points closest to the mouse
 				i = series.length;
 				for (j = 0; j < i; j++) {
-					if (series[j].visible && series[j].tooltipPoints.length &&
+					if (series[j].visible &&
 							series[j].options.enableMouseTracking !== false &&
-							!series[j].noSharedTooltip) {
+							!series[j].noSharedTooltip && series[j].tooltipPoints.length) {
 						point = series[j].tooltipPoints[index];
 						point._dist = mathAbs(index - point.plotX);
 						distance = mathMin(distance, point._dist);
@@ -9654,6 +9654,11 @@ Series.prototype = {
 			point,
 			i,
 			tooltipPoints = []; // a lookup array for each pixel in the x dimension
+			
+		// don't waste resources if tracker is disabled
+		if (series.options.enableMouseTracking === false) {
+			return;
+		}
 
 		// renew
 		if (renew) {
@@ -10421,7 +10426,7 @@ Series.prototype = {
 			}
 		}, duration);
 
-		series.isDirty = false; // means data is in accordance with what you see
+		series.isDirty = series.isDirtyData = false; // means data is in accordance with what you see
 		// (See #322) series.isDirty = series.isDirtyData = false; // means data is in accordance with what you see
 
 	},
@@ -10433,6 +10438,7 @@ Series.prototype = {
 		var series = this,
 			chart = series.chart,
 			clipRect = series.clipRect,
+			wasDirtyData = series.isDirtyData, // cache it here as it is set to false in render, but used after
 			group = series.group;
 
 		// reposition on resize
@@ -10454,8 +10460,7 @@ Series.prototype = {
 		series.setTooltipPoints(true);
 
 		series.render();
-		if (series.isDirtyData) {
-			series.isDirtyData = false;
+		if (wasDirtyData) {
 			fireEvent(series, 'updatedData');
 		}
 	},
@@ -11142,11 +11147,14 @@ seriesProto.processData = function() {
 	}
 
 	var i,
+		chart = series.chart,
 		processedXData = series.processedXData,
 		processedYData = series.processedYData,
 		data = series.data,
 		dataOptions = options.data,
-		plotSizeX = series.chart.plotSizeX,
+		plotSizeX = chart.plotSizeX,
+		xAxis = series.xAxis,
+		//groupPixelWidth = pick(xAxis.groupPixelWidth, dataGroupingOptions.groupPixelWidth),
 		groupPixelWidth = dataGroupingOptions.groupPixelWidth,
 		maxPoints = plotSizeX / groupPixelWidth,
 		approximation = dataGroupingOptions.approximation,
@@ -11154,12 +11162,21 @@ seriesProto.processData = function() {
 		dataLength = processedXData.length,
 		ohlcData = series.valueCount === 4,
 		groupedData = series.groupedData,
+		chartSeries = chart.series,
 		groupedXData = [],
 		groupedYData = [];
-	
-	// TODO: find out why this runs twice for each series when changing range. This appeared after 
-	// the following commit: https://github.com/highslide-software/highcharts.com/commit/974435ac1dcc5fb25f90c13775a3ddd94f09ba74
-	// console.log(series.name)
+		
+	// attempt to solve #334: if multiple series are compared on the same x axis, give them the same
+	// group pixel width 
+	/*if (!xAxis.groupPixelWidth) {
+		i = chartSeries.length;
+		while (i--) {
+			if (chartSeries[i].xAxis == xAxis) {
+				groupPixelWidth = mathMax(groupPixelWidth, chartSeries[i].options.dataGrouping.groupPixelWidth);
+			}
+		}
+		xAxis.groupPixelWidth = groupPixelWidth;		
+	}*/
 	
 	// clear previous groups
 	each (groupedData || [], function(point, i) {

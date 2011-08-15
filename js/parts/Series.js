@@ -999,6 +999,11 @@ Series.prototype = {
 			point,
 			i,
 			tooltipPoints = []; // a lookup array for each pixel in the x dimension
+			
+		// don't waste resources if tracker is disabled
+		if (series.options.enableMouseTracking === false) {
+			return;
+		}
 
 		// renew
 		if (renew) {
@@ -1766,7 +1771,7 @@ Series.prototype = {
 			}
 		}, duration);
 
-		series.isDirty = false; // means data is in accordance with what you see
+		series.isDirty = series.isDirtyData = false; // means data is in accordance with what you see
 		// (See #322) series.isDirty = series.isDirtyData = false; // means data is in accordance with what you see
 
 	},
@@ -1778,6 +1783,7 @@ Series.prototype = {
 		var series = this,
 			chart = series.chart,
 			clipRect = series.clipRect,
+			wasDirtyData = series.isDirtyData, // cache it here as it is set to false in render, but used after
 			group = series.group;
 
 		// reposition on resize
@@ -1799,8 +1805,7 @@ Series.prototype = {
 		series.setTooltipPoints(true);
 
 		series.render();
-		if (series.isDirtyData) {
-			series.isDirtyData = false;
+		if (wasDirtyData) {
 			fireEvent(series, 'updatedData');
 		}
 	},
