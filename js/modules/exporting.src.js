@@ -219,11 +219,12 @@ extend(Chart.prototype, {
 		// prepare for replicating the chart
 		options.series = [];
 		each(chart.series, function(serie) {
-			seriesOptions = serie.options;
-
-			seriesOptions.animation = false; // turn off animation
-			seriesOptions.showCheckbox = false;
-			seriesOptions.visible = serie.visible;
+			
+			seriesOptions = merge(serie.options, {
+				animation: false, // turn off animation
+				showCheckbox: false,
+				visible: serie.visible
+			});
 
 			// remove image markers
 			if (seriesOptions && seriesOptions.marker && /^url\(/.test(seriesOptions.marker.symbol)) {
