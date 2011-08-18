@@ -5597,7 +5597,6 @@ function Chart (options, callback) {
 					if (categories || !defined(pick(options.max, userMax))) {
 						max += catPad;
 					}
-					console.log(axis.dista)
 				}
 
 				// reset min/max or remove extremes based on start/end on tick
@@ -9480,7 +9479,6 @@ Series.prototype = {
 		series.cropStart = cropStart;
 		series.processedXData = processedXData;
 		series.processedYData = processedYData;
-		console.log(series.xAxis.dista = 1)
 	},
 
 	/**
@@ -12242,7 +12240,10 @@ function Scroller(chart) {
 		pxMax = pick(pxMax, xAxis.translate(max));
 
 		// set the scroller x axis extremes to reflect the total
-		if (rendered && xAxis.getExtremes) {
+		// commented out in the fix for #374: can't see why the new extremes should
+		// be fetched from the base x axis extremes rather than the actual navigator
+		// axis which depends on the navigator series data
+		/* if (rendered && xAxis.getExtremes) {
 			var newExtremes = chart.xAxis[0].getExtremes(),
 				oldExtremes = xAxis.getExtremes();
 
@@ -12250,8 +12251,18 @@ function Scroller(chart) {
 					newExtremes.dataMax !== oldExtremes.max) {
 				xAxis.setExtremes(newExtremes.dataMin, newExtremes.dataMax);
 			}
-		}
+		}*/
 
+		// set the scroller x axis extremes to reflect the data total
+		if (rendered && xAxis.getExtremes) {
+			var extremes = xAxis.getExtremes();
+
+			if (extremes.dataMin !== extremes.min ||
+					extremes.dataMax !== extremes.max) {
+				xAxis.setExtremes(extremes.dataMin, extremes.dataMax);
+			}
+		}
+ 
 		// handles are allowed to cross
 		zoomedMin = parseInt(mathMin(pxMin, pxMax), 10);
 		zoomedMax = parseInt(mathMax(pxMin, pxMax), 10);
@@ -12520,12 +12531,16 @@ function Scroller(chart) {
 
 		if (navigatorEnabled) {
 			var baseOptions = baseSeries.options,
-				navigatorSeriesOptions,
-				data = baseOptions.data;
+				mergedNavSeriesOptions,
+				baseData = baseOptions.data,
+				navigatorSeriesOptions = navigatorOptions.series,
+				navigatorData = navigatorSeriesOptions.data;
 
-			baseOptions.data = null; // remove it to prevent merging one by one
+			// remove it to prevent merging one by one
+			baseOptions.data = navigatorSeriesOptions.data = null; 
 
-			navigatorSeriesOptions = merge(baseSeries.options, navigatorOptions.series, {
+			// do the merge
+			mergedNavSeriesOptions = merge(baseSeries.options, navigatorSeriesOptions, {
 				threshold: null, // docs
 				clip: false, // docs
 				enableMouseTracking: false,
@@ -12537,10 +12552,13 @@ function Scroller(chart) {
 				showInLegend: false
 			});
 
-			baseOptions.data = navigatorSeriesOptions.data = data;
+			// set the data back
+			baseOptions.data = baseData;
+			navigatorSeriesOptions.data = navigatorData;
+			mergedNavSeriesOptions.data = navigatorData || baseData;
 
 			// add the series
-			navigatorSeries = chart.initSeries(navigatorSeriesOptions);
+			navigatorSeries = chart.initSeries(mergedNavSeriesOptions);
 
 			// respond to updated data in the base series
 			// todo: use similiar hook when base series is not yet initialized
