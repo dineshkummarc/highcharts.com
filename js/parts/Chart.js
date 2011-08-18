@@ -741,7 +741,7 @@ function Chart (options, callback) {
 						serie[strAxis] = axis;
 						associatedSeries.push(serie);
 
-						if (serie.options.padXAxis) {
+						if (strAxis === 'xAxis' && serie.options.padXAxis) {
 							padAxis = true;
 						}
 
