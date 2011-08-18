@@ -13141,6 +13141,20 @@ Highcharts.StockChart = function(options, callback) {
 				}
 			}
 		};
+		
+	
+	// apply X axis options to both single and multi y axes
+	options.xAxis = map (splat(options.xAxis || {}), function(xAxisOptions) {
+		return merge({
+			title: {
+				text: null
+			},
+			showLastLabel: true
+		}, xAxisOptions, {
+			type: 'datetime',
+			categories: null
+		});
+	});
 
 	// apply Y axis options to both single and multi y axes
 	options.yAxis = map (splat(options.yAxis || {}), function(yAxisOptions) {
@@ -13156,6 +13170,7 @@ Highcharts.StockChart = function(options, callback) {
 			}
 		}, yAxisOptions);
 	});
+
 
 	options.series = null;
 
@@ -13182,12 +13197,6 @@ Highcharts.StockChart = function(options, callback) {
 		legend: {
 			enabled: false
 		},
-		xAxis: {
-			title: {
-				text: null
-			},
-			showLastLabel: true
-		},
 
 		plotOptions: {
 			line: lineOptions,
@@ -13206,10 +13215,6 @@ Highcharts.StockChart = function(options, callback) {
 	{ // forced options
 		chart: {
 			inverted: false
-		},
-		xAxis: {
-			type: 'datetime',
-			categories: null
 		}
 	});
 
