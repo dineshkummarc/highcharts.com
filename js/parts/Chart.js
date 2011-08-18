@@ -802,12 +802,13 @@ function Chart (options, callback) {
 							var isNegative,
 								pointStack,
 								key,
+								cropped = serie.cropped,
+								xExtremes = serie.xAxis.getExtremes(),
 								j;
 
 							// get clipped and grouped data
 							serie.processData();
 
-							var start = + new Date();
 
 							xData = serie.processedXData;
 							yData = serie.processedYData;
@@ -816,12 +817,14 @@ function Chart (options, callback) {
 
 							// loop over the non-null y values and read them into a local array
 							for (i = 0; i < yDataLength; i++) {
+								x = xData[i];
 								y = yData[i];
-								if (y !== null && y !== UNDEFINED) {
+								if (y !== null && y !== UNDEFINED &&
+										cropped || (x >= xExtremes.min && x <= xExtremes.max)) {
+								
 									// read stacked values into a stack based on the x value,
 									// the sign of y and the stack key
 									if (stacking) {
-										x = xData[i];
 										isNegative = y < 0;
 										pointStack = isNegative ? negPointStack : posPointStack;
 										key = isNegative ? negKey : stackKey;
